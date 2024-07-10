@@ -9,29 +9,41 @@ import (
 )
 
 func extractTitle(logger logr.Logger, reader io.Reader) (string, error) {
+	logger.V(1).Info("Debug: Entering extractTitle function")
+
+	logger.V(2).Info("Debug: Creating HTML tokenizer")
 	tokenizer := html.NewTokenizer(reader)
-	logger.V(1).Info("Debug: Created HTML tokenizer")
+	logger.V(2).Info("Debug: HTML tokenizer created")
 
 	for {
+		logger.V(3).Info("Debug: Processing next token")
 		tokenType := tokenizer.Next()
-		logger.V(2).Info("Debug: Processing token", "type", tokenType)
+		logger.V(3).Info("Debug: Token type", "type", tokenType)
 
 		switch tokenType {
 		case html.ErrorToken:
-			logger.V(1).Info("Debug: Reached end of HTML document")
-			return "", io.EOF
+			logger.V(2).Info("Debug: Reached end of HTML document or encountered an error")
+			err := tokenizer.Err()
+			if err == io.EOF {
+				logger.V(2).Info("Debug: Reached end of HTML document without finding title")
+				return "", io.EOF
+			}
+			logger.Error(err, "Error while tokenizing HTML")
+			return "", err
+
 		case html.StartTagToken, html.SelfClosingTagToken:
 			token := tokenizer.Token()
-			logger.V(2).Info("Debug: Found start/self-closing tag", "tag", token.Data)
+			logger.V(3).Info("Debug: Found start/self-closing tag", "tag", token.Data)
 
 			if token.Data == "title" {
-				logger.V(1).Info("Debug: Found title tag")
+				logger.V(2).Info("Debug: Found title tag")
 				tokenType = tokenizer.Next()
 				if tokenType == html.TextToken {
 					title := strings.TrimSpace(tokenizer.Token().Data)
 					logger.V(1).Info("Debug: Extracted title", "title", title)
 					return title, nil
 				}
+				logger.V(2).Info("Debug: Title tag was empty or contained non-text content")
 			}
 		}
 	}
