@@ -1,8 +1,10 @@
 package core
 
 import (
+	"os"
 	"path/filepath"
 
+	"github.com/adrg/xdg"
 	"github.com/go-logr/logr"
 )
 
@@ -12,7 +14,11 @@ func Hello(logger logr.Logger) {
 
 	logger.V(1).Info("Debug: Setting up file paths")
 	filePath := "/Users/mtm/Documents/Obsidian Vault/2024-07-10.md"
-	cacheFile := filepath.Join(filepath.Dir(filePath), "data.json")
+	cacheFile, err := getCachePath("hollowbeak/data.json")
+	if err != nil {
+		logger.Error(err, "Failed to get cache path")
+		return
+	}
 	logger.V(2).Info("Debug: File paths set", "filePath", filePath, "cacheFile", cacheFile)
 
 	logger.V(1).Info("Debug: Creating new URLExtractor")
@@ -20,7 +26,7 @@ func Hello(logger logr.Logger) {
 	logger.V(2).Info("Debug: URLExtractor created", "strictMode", false)
 
 	logger.V(1).Info("Debug: Loading cache")
-	err := extractor.LoadCache()
+	err = extractor.LoadCache()
 	if err != nil {
 		logger.Error(err, "Failed to load cache")
 		return
@@ -67,4 +73,21 @@ func Hello(logger logr.Logger) {
 	logger.V(2).Info("Debug: Cache saved successfully")
 
 	logger.V(1).Info("Debug: Exiting Hello function")
+}
+
+func getCachePath(configRelPath string) (string, error) {
+	configFilePath, err := xdg.ConfigFile(configRelPath)
+	if err != nil {
+		return "", err
+	}
+
+	dirPerm := os.FileMode(0o700)
+
+	d := filepath.Dir(configFilePath)
+
+	if err := os.MkdirAll(d, dirPerm); err != nil {
+		return "", err
+	}
+
+	return configFilePath, nil
 }
