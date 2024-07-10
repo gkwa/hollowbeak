@@ -20,5 +20,4 @@ var helloCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(helloCmd)
-	logger.V(1).Info("Debug: Added hello command to root command")
 }
