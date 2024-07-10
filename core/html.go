@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
@@ -26,10 +27,10 @@ func extractTitle(logger logr.Logger, reader io.Reader) (string, error) {
 			err := tokenizer.Err()
 			if err == io.EOF {
 				logger.V(2).Info("Debug: Reached end of HTML document without finding title")
-				return "", io.EOF
+				return "", fmt.Errorf("reached end of HTML document without finding title: %w", io.EOF)
 			}
 			logger.Error(err, "Error while tokenizing HTML")
-			return "", err
+			return "", fmt.Errorf("error while tokenizing HTML: %w", err)
 
 		case html.StartTagToken, html.SelfClosingTagToken:
 			token := tokenizer.Token()
@@ -44,6 +45,7 @@ func extractTitle(logger logr.Logger, reader io.Reader) (string, error) {
 					return title, nil
 				}
 				logger.V(2).Info("Debug: Title tag was empty or contained non-text content")
+				return "", fmt.Errorf("title tag was empty or contained non-text content")
 			}
 		}
 	}

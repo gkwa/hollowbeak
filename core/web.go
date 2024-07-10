@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -16,7 +17,7 @@ func getPageTitle(logger logr.Logger, url string) (string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		logger.Error(err, "Failed to create HTTP request")
-		return "", err
+		return "", fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
 	logger.V(2).Info("Debug: Setting User-Agent header")
@@ -26,12 +27,16 @@ func getPageTitle(logger logr.Logger, url string) (string, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Error(err, "Failed to make HTTP request")
-		return "", err
+		return "", fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	logger.V(1).Info("Debug: HTTP request successful", "status", resp.Status)
 
 	logger.V(2).Info("Debug: Extracting title from response body")
-	return extractTitle(logger, resp.Body)
+	title, err := extractTitle(logger, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract title: %w", err)
+	}
+	return title, nil
 }
