@@ -12,7 +12,13 @@ type URLInfo struct {
 	Title string
 }
 
-func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherTypes []string, noCache bool) error {
+func Hello(
+	logger logr.Logger,
+	filePath string,
+	outputFormat string,
+	fetcherTypes []string,
+	noCache bool,
+) error {
 	logger.V(1).Info("Debug: Entering Hello function")
 
 	var titleFetchers []TitleFetcher
