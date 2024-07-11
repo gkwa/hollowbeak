@@ -12,23 +12,29 @@ type URLInfo struct {
 	Title string
 }
 
-func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherType string) error {
+func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherTypes []string) error {
 	logger.V(1).Info("Debug: Entering Hello function")
 
-	var titleFetcher TitleFetcher
-	switch fetcherType {
-	case "http":
-		titleFetcher = NewHTTPTitleFetcher(logger)
-	case "colly":
-		titleFetcher = NewCollyTitleFetcher(logger)
-	case "sql":
-		titleFetcher = NewSQLTitleFetcher(logger)
-	default:
-		return fmt.Errorf("invalid fetcher type: %s", fetcherType)
+	var titleFetchers []TitleFetcher
+	for _, fetcherType := range fetcherTypes {
+		switch fetcherType {
+		case "http":
+			titleFetchers = append(titleFetchers, NewHTTPTitleFetcher(logger))
+		case "colly":
+			titleFetchers = append(titleFetchers, NewCollyTitleFetcher(logger))
+		case "sql":
+			titleFetchers = append(titleFetchers, NewSQLTitleFetcher(logger))
+		default:
+			return fmt.Errorf("invalid fetcher type: %s", fetcherType)
+		}
+	}
+
+	if len(titleFetchers) == 0 {
+		return fmt.Errorf("no valid fetcher types specified")
 	}
 
 	logger.V(1).Info("Debug: Creating new URLExtractor", "filePath", filePath)
-	extractor, err := NewURLExtractor(logger, filePath, titleFetcher)
+	extractor, err := NewURLExtractor(logger, filePath, titleFetchers)
 	if err != nil {
 		return fmt.Errorf("failed to create URLExtractor: %w", err)
 	}

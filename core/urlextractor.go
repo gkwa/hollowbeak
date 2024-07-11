@@ -9,23 +9,23 @@ import (
 )
 
 type URLExtractor struct {
-	logger       logr.Logger
-	filePath     string
-	cache        *Cache
-	titleFetcher TitleFetcher
+	logger        logr.Logger
+	filePath      string
+	cache         *Cache
+	titleFetchers []TitleFetcher
 }
 
-func NewURLExtractor(logger logr.Logger, filePath string, titleFetcher TitleFetcher) (*URLExtractor, error) {
+func NewURLExtractor(logger logr.Logger, filePath string, titleFetchers []TitleFetcher) (*URLExtractor, error) {
 	cache, err := NewCache(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cache: %w", err)
 	}
 
 	return &URLExtractor{
-		logger:       logger,
-		filePath:     filePath,
-		cache:        cache,
-		titleFetcher: titleFetcher,
+		logger:        logger,
+		filePath:      filePath,
+		cache:         cache,
+		titleFetchers: titleFetchers,
 	}, nil
 }
 
@@ -51,13 +51,18 @@ func (ue *URLExtractor) GetOrFetchTitle(url string) (string, error) {
 	}
 
 	ue.logger.V(1).Info("Debug: Fetching title from web", "url", url)
-	title, err := ue.titleFetcher.FetchTitle(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch title: %w", err)
+	var lastErr error
+	for _, fetcher := range ue.titleFetchers {
+		title, err := fetcher.FetchTitle(url)
+		if err == nil {
+			if err := ue.cache.Set(url, title); err != nil {
+				ue.logger.Error(err, "Failed to cache title", "url", url)
+			}
+			return title, nil
+		}
+		lastErr = err
+		ue.logger.V(2).Info("Debug: Fetcher failed, trying next", "url", url, "error", err.Error())
 	}
 
-	if err := ue.cache.Set(url, title); err != nil {
-		ue.logger.Error(err, "Failed to cache title", "url", url)
-	}
-	return title, nil
+	return "", fmt.Errorf("all fetchers failed to fetch title: %w", lastErr)
 }
