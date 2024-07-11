@@ -52,10 +52,6 @@ func (cache *Cache) Get(key string) (string, bool) {
 	if time.Now().After(item.ExpiresAt) {
 		cache.logger.V(2).Info("Debug: Cache item expired", "key", key)
 		delete(cache.data, key)
-		err := cache.save()
-		if err != nil {
-			cache.logger.Error(err, "Failed to save cache after removing expired item", "key", key)
-		}
 		return "", false
 	}
 
@@ -67,11 +63,6 @@ func (cache *Cache) Set(key, value string) error {
 	cache.data[key] = CacheItem{
 		Value:     value,
 		ExpiresAt: time.Now().Add(6 * 30 * 24 * time.Hour),
-	}
-	err := cache.save()
-	if err != nil {
-		cache.logger.Error(err, "Failed to save cache after setting value", "key", key)
-		return fmt.Errorf("failed to save cache after setting value: %w", err)
 	}
 	return nil
 }
@@ -92,16 +83,22 @@ func (cache *Cache) load() error {
 		return fmt.Errorf("failed to unmarshal cache data: %w", err)
 	}
 
-	// Remove expired items
+	cache.logger.V(1).Info("Debug: Cache loaded successfully", "entries", len(cache.data))
+	return nil
+}
+
+func (cache *Cache) CleanupAndSave() error {
+	cache.logger.V(1).Info("Debug: Starting cache cleanup")
 	now := time.Now()
 	for key, item := range cache.data {
 		if now.After(item.ExpiresAt) {
+			cache.logger.V(2).Info("Debug: Removing expired cache item", "key", key)
 			delete(cache.data, key)
 		}
 	}
+	cache.logger.V(1).Info("Debug: Cache cleanup completed", "remainingEntries", len(cache.data))
 
-	cache.logger.V(1).Info("Debug: Cache loaded successfully", "entries", len(cache.data))
-	return nil
+	return cache.save()
 }
 
 func (cache *Cache) save() error {

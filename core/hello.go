@@ -42,6 +42,15 @@ func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherType
 	}
 	logger.V(2).Info("Debug: URLExtractor created")
 
+	defer func() {
+		if !noCache {
+			logger.V(1).Info("Debug: Cleaning up and saving cache")
+			if err := extractor.cache.CleanupAndSave(); err != nil {
+				logger.Error(err, "Failed to cleanup and save cache")
+			}
+		}
+	}()
+
 	urlInfoList, err := BuildURLInfoList(logger, extractor)
 	if err != nil {
 		return fmt.Errorf("failed to build URL info list: %w", err)
@@ -50,9 +59,9 @@ func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherType
 	var output string
 	switch outputFormat {
 	case "markdown":
-		output = PrintMarkdown(urlInfoList)
+		output = GenerateMarkdown(urlInfoList)
 	case "html":
-		output = PrintHTML(urlInfoList)
+		output = GenerateHTML(urlInfoList)
 	default:
 		return fmt.Errorf("invalid output format: %s", outputFormat)
 	}
@@ -93,7 +102,7 @@ func BuildURLInfoList(logger logr.Logger, extractor *URLExtractor) ([]URLInfo, e
 	return urlInfoList, nil
 }
 
-func PrintMarkdown(urlInfoList []URLInfo) string {
+func GenerateMarkdown(urlInfoList []URLInfo) string {
 	var sb strings.Builder
 	for _, info := range urlInfoList {
 		sb.WriteString(fmt.Sprintf("[%s](%s)\n\n", info.Title, info.URL))
@@ -101,7 +110,7 @@ func PrintMarkdown(urlInfoList []URLInfo) string {
 	return sb.String()
 }
 
-func PrintHTML(urlInfoList []URLInfo) string {
+func GenerateHTML(urlInfoList []URLInfo) string {
 	var sb strings.Builder
 	sb.WriteString("<ul>\n")
 	for _, info := range urlInfoList {
