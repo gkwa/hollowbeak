@@ -7,7 +7,12 @@ import (
 	"github.com/go-logr/logr"
 )
 
-func Hello(logger logr.Logger) {
+type URLInfo struct {
+	URL   string
+	Title string
+}
+
+func Hello(logger logr.Logger, outputFormat string) error {
 	logger.V(1).Info("Debug: Entering Hello function")
 
 	filePath := "/Users/mtm/Documents/Obsidian Vault/2024-07-10.md"
@@ -15,20 +20,37 @@ func Hello(logger logr.Logger) {
 	logger.V(1).Info("Debug: Creating new URLExtractor")
 	extractor, err := NewURLExtractor(logger, filePath)
 	if err != nil {
-		logger.Error(err, "Failed to create URLExtractor")
-		return
+		return fmt.Errorf("failed to create URLExtractor: %w", err)
 	}
 	logger.V(2).Info("Debug: URLExtractor created")
 
+	urlInfoList, err := BuildURLInfoList(logger, extractor)
+	if err != nil {
+		return fmt.Errorf("failed to build URL info list: %w", err)
+	}
+
+	switch outputFormat {
+	case "markdown":
+		PrintMarkdown(urlInfoList)
+	case "html":
+		PrintHTML(urlInfoList)
+	default:
+		return fmt.Errorf("invalid output format: %s", outputFormat)
+	}
+
+	logger.V(1).Info("Debug: Exiting Hello function")
+	return nil
+}
+
+func BuildURLInfoList(logger logr.Logger, extractor *URLExtractor) ([]URLInfo, error) {
 	logger.V(1).Info("Debug: Extracting URLs from file")
 	urls, err := extractor.ExtractURLs()
 	if err != nil {
-		logger.Error(err, "Failed to extract URLs")
-		return
+		return nil, fmt.Errorf("failed to extract URLs: %w", err)
 	}
 	logger.V(2).Info("Debug: URLs extracted", "count", len(urls))
 
-	var stringBuffer strings.Builder
+	var urlInfoList []URLInfo
 
 	for _, url := range urls {
 		logger.V(1).Info("Debug: Processing URL", "url", url)
@@ -41,13 +63,26 @@ func Hello(logger logr.Logger) {
 
 		logger.V(2).Info("Title", "url", url, "title", title)
 
-		_, err = fmt.Fprintf(&stringBuffer, "[%s](%s)\n\n", title, url)
-		if err != nil {
-			logger.Error(err, "Failed to write to string buffer")
-		}
+		urlInfoList = append(urlInfoList, URLInfo{URL: url, Title: title})
 	}
 
-	fmt.Println("Markdown-formatted URLs:\n" + stringBuffer.String())
+	return urlInfoList, nil
+}
 
-	logger.V(1).Info("Debug: Exiting Hello function")
+func PrintMarkdown(urlInfoList []URLInfo) {
+	var sb strings.Builder
+	for _, info := range urlInfoList {
+		sb.WriteString(fmt.Sprintf("[%s](%s)\n\n", info.Title, info.URL))
+	}
+	fmt.Print(sb.String())
+}
+
+func PrintHTML(urlInfoList []URLInfo) {
+	var sb strings.Builder
+	sb.WriteString("<ul>\n")
+	for _, info := range urlInfoList {
+		sb.WriteString(fmt.Sprintf("  <li><a href=\"%s\">%s</a></li>\n", info.URL, info.Title))
+	}
+	sb.WriteString("</ul>")
+	fmt.Println(sb.String())
 }
