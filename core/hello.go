@@ -12,7 +12,7 @@ type URLInfo struct {
 	Title string
 }
 
-func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherTypes []string) error {
+func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherTypes []string, noCache bool) error {
 	logger.V(1).Info("Debug: Entering Hello function")
 
 	var titleFetchers []TitleFetcher
@@ -34,7 +34,7 @@ func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherType
 	}
 
 	logger.V(1).Info("Debug: Creating new URLExtractor", "filePath", filePath)
-	extractor, err := NewURLExtractor(logger, filePath, titleFetchers)
+	extractor, err := NewURLExtractor(logger, filePath, titleFetchers, noCache)
 	if err != nil {
 		return fmt.Errorf("failed to create URLExtractor: %w", err)
 	}

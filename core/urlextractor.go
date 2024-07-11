@@ -13,12 +13,17 @@ type URLExtractor struct {
 	filePath      string
 	cache         *Cache
 	titleFetchers []TitleFetcher
+	noCache       bool
 }
 
-func NewURLExtractor(logger logr.Logger, filePath string, titleFetchers []TitleFetcher) (*URLExtractor, error) {
-	cache, err := NewCache(logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cache: %w", err)
+func NewURLExtractor(logger logr.Logger, filePath string, titleFetchers []TitleFetcher, noCache bool) (*URLExtractor, error) {
+	var cache *Cache
+	var err error
+	if !noCache {
+		cache, err = NewCache(logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create cache: %w", err)
+		}
 	}
 
 	return &URLExtractor{
@@ -26,6 +31,7 @@ func NewURLExtractor(logger logr.Logger, filePath string, titleFetchers []TitleF
 		filePath:      filePath,
 		cache:         cache,
 		titleFetchers: titleFetchers,
+		noCache:       noCache,
 	}, nil
 }
 
@@ -45,9 +51,11 @@ func (ue *URLExtractor) ExtractURLs() ([]string, error) {
 }
 
 func (ue *URLExtractor) GetOrFetchTitle(url string) (string, error) {
-	if title, ok := ue.cache.Get(url); ok {
-		ue.logger.V(1).Info("Debug: Title found in cache", "url", url)
-		return title, nil
+	if !ue.noCache {
+		if title, ok := ue.cache.Get(url); ok {
+			ue.logger.V(1).Info("Debug: Title found in cache", "url", url)
+			return title, nil
+		}
 	}
 
 	ue.logger.V(1).Info("Debug: Fetching title from web", "url", url)
@@ -55,8 +63,10 @@ func (ue *URLExtractor) GetOrFetchTitle(url string) (string, error) {
 	for _, fetcher := range ue.titleFetchers {
 		title, err := fetcher.FetchTitle(url)
 		if err == nil {
-			if err := ue.cache.Set(url, title); err != nil {
-				ue.logger.Error(err, "Failed to cache title", "url", url)
+			if !ue.noCache {
+				if err := ue.cache.Set(url, title); err != nil {
+					ue.logger.Error(err, "Failed to cache title", "url", url)
+				}
 			}
 			return title, nil
 		}
