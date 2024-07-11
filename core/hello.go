@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -12,13 +14,7 @@ type URLInfo struct {
 	Title string
 }
 
-func Hello(
-	logger logr.Logger,
-	filePath string,
-	outputFormat string,
-	fetcherTypes []string,
-	noCache bool,
-) error {
+func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherTypes []string, noCache bool) error {
 	logger.V(1).Info("Debug: Entering Hello function")
 
 	var titleFetchers []TitleFetcher
@@ -51,13 +47,19 @@ func Hello(
 		return fmt.Errorf("failed to build URL info list: %w", err)
 	}
 
+	var output string
 	switch outputFormat {
 	case "markdown":
-		PrintMarkdown(urlInfoList)
+		output = PrintMarkdown(urlInfoList)
 	case "html":
-		PrintHTML(urlInfoList)
+		output = PrintHTML(urlInfoList)
 	default:
 		return fmt.Errorf("invalid output format: %s", outputFormat)
+	}
+
+	_, err = io.WriteString(os.Stdout, output)
+	if err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
 	}
 
 	logger.V(1).Info("Debug: Exiting Hello function")
@@ -91,20 +93,20 @@ func BuildURLInfoList(logger logr.Logger, extractor *URLExtractor) ([]URLInfo, e
 	return urlInfoList, nil
 }
 
-func PrintMarkdown(urlInfoList []URLInfo) {
+func PrintMarkdown(urlInfoList []URLInfo) string {
 	var sb strings.Builder
 	for _, info := range urlInfoList {
 		sb.WriteString(fmt.Sprintf("[%s](%s)\n\n", info.Title, info.URL))
 	}
-	fmt.Print(sb.String())
+	return sb.String()
 }
 
-func PrintHTML(urlInfoList []URLInfo) {
+func PrintHTML(urlInfoList []URLInfo) string {
 	var sb strings.Builder
 	sb.WriteString("<ul>\n")
 	for _, info := range urlInfoList {
 		sb.WriteString(fmt.Sprintf("  <li><a href=\"%s\">%s</a></li>\n", info.URL, info.Title))
 	}
 	sb.WriteString("</ul>")
-	fmt.Println(sb.String())
+	return sb.String()
 }
