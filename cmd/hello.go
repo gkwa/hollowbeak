@@ -8,7 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var outputFormat string
+var (
+	outputFormat string
+	inputFile    string
+)
 
 var helloCmd = &cobra.Command{
 	Use:   "hello",
@@ -18,7 +21,7 @@ var helloCmd = &cobra.Command{
 		logger := LoggerFrom(cmd.Context())
 		logger.V(1).Info("Debug: Entering hello command Run function")
 		logger.Info("Running hello command")
-		if err := core.Hello(logger, outputFormat); err != nil {
+		if err := core.Hello(logger, inputFile, outputFormat); err != nil {
 			logger.Error(err, "Failed to execute Hello function")
 			os.Exit(1)
 		}
@@ -29,8 +32,13 @@ var helloCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(helloCmd)
 	helloCmd.Flags().StringVar(&outputFormat, "output", "html", "Output format: 'markdown' or 'html'")
+	helloCmd.Flags().StringVar(&inputFile, "input", "", "Input file path")
 	if err := helloCmd.MarkFlagRequired("output"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error marking 'output' flag as required: %v\n", err)
+		os.Exit(1)
+	}
+	if err := helloCmd.MarkFlagRequired("input"); err != nil {
+		fmt.Fprintf(os.Stderr, "Error marking 'input' flag as required: %v\n", err)
 		os.Exit(1)
 	}
 }

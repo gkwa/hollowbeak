@@ -12,12 +12,10 @@ type URLInfo struct {
 	Title string
 }
 
-func Hello(logger logr.Logger, outputFormat string) error {
+func Hello(logger logr.Logger, filePath string, outputFormat string) error {
 	logger.V(1).Info("Debug: Entering Hello function")
 
-	filePath := "/Users/mtm/Documents/Obsidian Vault/2024-07-10.md"
-
-	logger.V(1).Info("Debug: Creating new URLExtractor")
+	logger.V(1).Info("Debug: Creating new URLExtractor", "filePath", filePath)
 	extractor, err := NewURLExtractor(logger, filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create URLExtractor: %w", err)
