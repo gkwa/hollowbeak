@@ -53,7 +53,7 @@ func (ue *URLExtractor) ExtractURLs() ([]string, error) {
 func (ue *URLExtractor) GetOrFetchTitle(url string) (string, error) {
 	if !ue.noCache {
 		if title, ok := ue.cache.Get(url); ok {
-			ue.logger.V(1).Info("Debug: Title found in cache", "url", url)
+			ue.logger.V(1).Info("Debug: Title found in cache", "url", url, "title", title)
 			return title, nil
 		}
 	}
