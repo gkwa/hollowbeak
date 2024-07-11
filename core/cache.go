@@ -66,7 +66,7 @@ func (cache *Cache) Set(key, value string) error {
 	cache.logger.V(2).Info("Debug: Setting value in cache", "key", key)
 	cache.data[key] = CacheItem{
 		Value:     value,
-		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		ExpiresAt: time.Now().Add(6 * 30 * 24 * time.Hour),
 	}
 	err := cache.save()
 	if err != nil {
