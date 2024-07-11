@@ -5,15 +5,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/go-logr/logr"
 )
 
+type CacheItem struct {
+	Value     string    `json:"value"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
 type Cache struct {
 	logger    logr.Logger
 	cacheFile string
-	data      map[string]string
+	data      map[string]CacheItem
 }
 
 func NewCache(logger logr.Logger) (*Cache, error) {
@@ -25,7 +31,7 @@ func NewCache(logger logr.Logger) (*Cache, error) {
 	cache := &Cache{
 		logger:    logger,
 		cacheFile: cacheFile,
-		data:      make(map[string]string),
+		data:      make(map[string]CacheItem),
 	}
 
 	err = cache.load()
@@ -38,13 +44,30 @@ func NewCache(logger logr.Logger) (*Cache, error) {
 
 func (cache *Cache) Get(key string) (string, bool) {
 	cache.logger.V(2).Info("Debug: Getting value from cache", "key", key)
-	value, ok := cache.data[key]
-	return value, ok
+	item, ok := cache.data[key]
+	if !ok {
+		return "", false
+	}
+
+	if time.Now().After(item.ExpiresAt) {
+		cache.logger.V(2).Info("Debug: Cache item expired", "key", key)
+		delete(cache.data, key)
+		err := cache.save()
+		if err != nil {
+			cache.logger.Error(err, "Failed to save cache after removing expired item", "key", key)
+		}
+		return "", false
+	}
+
+	return item.Value, true
 }
 
 func (cache *Cache) Set(key, value string) error {
 	cache.logger.V(2).Info("Debug: Setting value in cache", "key", key)
-	cache.data[key] = value
+	cache.data[key] = CacheItem{
+		Value:     value,
+		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+	}
 	err := cache.save()
 	if err != nil {
 		cache.logger.Error(err, "Failed to save cache after setting value", "key", key)
@@ -67,6 +90,14 @@ func (cache *Cache) load() error {
 	err = json.Unmarshal(data, &cache.data)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal cache data: %w", err)
+	}
+
+	// Remove expired items
+	now := time.Now()
+	for key, item := range cache.data {
+		if now.After(item.ExpiresAt) {
+			delete(cache.data, key)
+		}
 	}
 
 	cache.logger.V(1).Info("Debug: Cache loaded successfully", "entries", len(cache.data))
