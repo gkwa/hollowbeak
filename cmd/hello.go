@@ -31,12 +31,8 @@ var helloCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(helloCmd)
-	helloCmd.Flags().StringVar(&outputFormat, "output", "html", "Output format: 'markdown' or 'html'")
+	helloCmd.Flags().StringVar(&outputFormat, "output", "markdown", "Output format: 'markdown' or 'html'")
 	helloCmd.Flags().StringVar(&inputFile, "input", "", "Input file path")
-	if err := helloCmd.MarkFlagRequired("output"); err != nil {
-		fmt.Fprintf(os.Stderr, "Error marking 'output' flag as required: %v\n", err)
-		os.Exit(1)
-	}
 	if err := helloCmd.MarkFlagRequired("input"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error marking 'input' flag as required: %v\n", err)
 		os.Exit(1)
