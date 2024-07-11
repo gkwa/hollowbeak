@@ -18,6 +18,7 @@ type SQLTitleFetcher struct {
 }
 
 func NewSQLTitleFetcher(logger logr.Logger) *SQLTitleFetcher {
+	logger.V(1).Info("Debug: Creating new SQLTitleFetcher")
 	return &SQLTitleFetcher{
 		logger: logger,
 	}
@@ -26,34 +27,46 @@ func NewSQLTitleFetcher(logger logr.Logger) *SQLTitleFetcher {
 func (f *SQLTitleFetcher) FetchTitle(url string) (string, error) {
 	f.logger.V(1).Info("Debug: Fetching title from SQL database", "url", url)
 
-	historyItems, _, err := f.getTitlesForURLs([]string{url})
+	f.logger.V(2).Info("Debug: Getting titles for URLs", "url", url)
+	historyItems, query, err := f.getTitlesForURLs([]string{url})
 	if err != nil {
+		f.logger.Error(err, "Failed to fetch titles", "url", url)
 		return "", fmt.Errorf("failed to fetch titles: %w", err)
 	}
+	f.logger.V(3).Info("Debug: SQL query executed", "query", query)
 
 	if item, ok := historyItems[url]; ok {
 		f.logger.V(2).Info("Debug: Found title in database", "url", url, "title", item.Title)
 		return item.Title, nil
 	}
 
+	f.logger.V(2).Info("Debug: No title found in database", "url", url)
 	return "", fmt.Errorf("no title found for URL: %s", url)
 }
 
 func (f *SQLTitleFetcher) getTitlesForURLs(urls []string) (map[string]HistoryItem, string, error) {
+	f.logger.V(2).Info("Debug: Getting titles for URLs", "urlCount", len(urls))
+
 	historyFilePath, err := homedir.Expand("~/Library/Application Support/Google/Chrome/Default/History")
 	if err != nil {
+		f.logger.Error(err, "Failed to expand history file path")
 		return nil, "", fmt.Errorf("failed to expand history file path: %v", err)
 	}
+	f.logger.V(3).Info("Debug: Chrome history file path", "path", historyFilePath)
 
 	backupFile := filepath.Join(os.TempDir(), "history_backup.db")
+	f.logger.V(3).Info("Debug: Creating history backup", "backupPath", backupFile)
 	err = f.createHistoryBackup(historyFilePath, backupFile)
 	if err != nil {
+		f.logger.Error(err, "Failed to create history backup")
 		return nil, "", err
 	}
 	defer os.Remove(backupFile)
 
+	f.logger.V(3).Info("Debug: Opening SQLite database", "path", backupFile)
 	db, err := sql.Open("sqlite3", backupFile+"?mode=ro")
 	if err != nil {
+		f.logger.Error(err, "Failed to open SQLite database")
 		return nil, "", err
 	}
 	defer db.Close()
@@ -64,25 +77,29 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []string) (map[string]HistoryIte
 	}
 
 	query := fmt.Sprintf(`
-   SELECT
-   	datetime(visits.visit_time/1000000-11644473600, 'unixepoch', 'localtime') as visit_time,
-   	urls.url,
-   	urls.title
-   FROM
-   	visits INNER JOIN urls ON visits.url = urls.id
-   WHERE
-   	urls.url IN (%s)
-   ORDER BY
-   	visit_time DESC
-  `, strings.Join(placeholders, ","))
+  SELECT
+  	datetime(visits.visit_time/1000000-11644473600, 'unixepoch', 'localtime') as visit_time,
+  	urls.url,
+  	urls.title
+  FROM
+  	visits INNER JOIN urls ON visits.url = urls.id
+  WHERE
+  	urls.url IN (%s)
+  ORDER BY
+  	visit_time DESC
+ `, strings.Join(placeholders, ","))
+
+	f.logger.V(3).Info("Debug: Prepared SQL query", "query", query)
 
 	args := make([]interface{}, len(urls))
 	for i, url := range urls {
 		args[i] = url
 	}
 
+	f.logger.V(3).Info("Debug: Executing SQL query")
 	rows, err := db.Query(query, args...)
 	if err != nil {
+		f.logger.Error(err, "Failed to execute SQL query")
 		return nil, query, err
 	}
 	defer rows.Close()
@@ -96,10 +113,12 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []string) (map[string]HistoryIte
 		var visitTimeStr string
 		err := rows.Scan(&visitTimeStr, &item.URL, &item.Title)
 		if err != nil {
+			f.logger.Error(err, "Failed to scan SQL row")
 			return nil, query, err
 		}
 		item.LastVisit, err = time.ParseInLocation("2006-01-02 15:04:05", visitTimeStr, time.Local)
 		if err != nil {
+			f.logger.Error(err, "Failed to parse visit time")
 			return nil, query, err
 		}
 		item.RelativeVisit = f.formatRelativeTime(currentTime, item.LastVisit)
@@ -107,22 +126,28 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []string) (map[string]HistoryIte
 		count++
 
 		historyItems[item.URL] = item
+		f.logger.V(3).Info("Debug: Processed history item", "url", item.URL, "title", item.Title)
 	}
 
+	f.logger.V(2).Info("Debug: Finished getting titles for URLs", "itemCount", len(historyItems))
 	return historyItems, query, nil
 }
 
 func (f *SQLTitleFetcher) createHistoryBackup(src, dst string) error {
+	f.logger.V(2).Info("Debug: Creating history backup", "src", src, "dst", dst)
 	input, err := os.ReadFile(src)
 	if err != nil {
+		f.logger.Error(err, "Failed to read source file")
 		return err
 	}
 
 	err = os.WriteFile(dst, input, 0o644)
 	if err != nil {
+		f.logger.Error(err, "Failed to write destination file")
 		return err
 	}
 
+	f.logger.V(2).Info("Debug: Successfully created history backup")
 	return nil
 }
 

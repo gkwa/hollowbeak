@@ -34,7 +34,7 @@ func init() {
 	rootCmd.AddCommand(helloCmd)
 	helloCmd.Flags().StringVar(&outputFormat, "output", "markdown", "Output format: 'markdown' or 'html'")
 	helloCmd.Flags().StringVar(&inputFile, "input", "", "Input file path")
-	helloCmd.Flags().StringVar(&fetcherType, "fetcher", "http", "Title fetcher type: 'http', 'colly', or 'sql'")
+	helloCmd.Flags().StringVar(&fetcherType, "fetcher", "colly", "Title fetcher type: 'http', 'colly', or 'sql'")
 	if err := helloCmd.MarkFlagRequired("input"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error marking 'input' flag as required: %v\n", err)
 		os.Exit(1)
