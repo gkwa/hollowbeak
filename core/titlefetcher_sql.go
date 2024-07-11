@@ -24,27 +24,32 @@ func NewSQLTitleFetcher(logger logr.Logger) *SQLTitleFetcher {
 	}
 }
 
-func (f *SQLTitleFetcher) FetchTitle(url string) (string, error) {
-	f.logger.V(1).Info("Debug: Fetching title from SQL database", "url", url)
+func (f *SQLTitleFetcher) FetchTitles(urls []urlRecord) (map[string]string, error) {
+	f.logger.V(1).Info("Debug: Fetching titles from SQL database", "urlCount", len(urls))
 
-	f.logger.V(2).Info("Debug: Getting titles for URLs", "url", url)
-	historyItems, query, err := f.getTitlesForURLs([]string{url})
+	f.logger.V(2).Info("Debug: Getting titles for URLs")
+	historyItems, query, err := f.getTitlesForURLs(urls)
 	if err != nil {
-		f.logger.Error(err, "Failed to fetch titles", "url", url)
-		return "", fmt.Errorf("failed to fetch titles: %w", err)
+		f.logger.Error(err, "Failed to fetch titles")
+		return nil, fmt.Errorf("failed to fetch titles: %w", err)
 	}
 	f.logger.V(3).Info("Debug: SQL query executed", "query", query)
 
-	if item, ok := historyItems[url]; ok {
-		f.logger.V(2).Info("Debug: Found title in database", "url", url, "title", item.Title)
-		return item.Title, nil
+	titles := make(map[string]string)
+	for _, url := range urls {
+		if item, ok := historyItems[url.URL]; ok {
+			f.logger.V(2).Info("Debug: Found title in database", "url", url.URL, "title", item.Title)
+			titles[url.URL] = item.Title
+		} else {
+			f.logger.V(2).Info("Debug: No title found in database", "url", url.URL)
+			titles[url.URL] = ""
+		}
 	}
 
-	f.logger.V(2).Info("Debug: No title found in database", "url", url)
-	return "", fmt.Errorf("no title found for URL: %s", url)
+	return titles, nil
 }
 
-func (f *SQLTitleFetcher) getTitlesForURLs(urls []string) (map[string]HistoryItem, string, error) {
+func (f *SQLTitleFetcher) getTitlesForURLs(urls []urlRecord) (map[string]HistoryItem, string, error) {
 	f.logger.V(2).Info("Debug: Getting titles for URLs", "urlCount", len(urls))
 
 	historyFilePath, err := homedir.Expand("~/Library/Application Support/Google/Chrome/Default/History")
@@ -93,7 +98,7 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []string) (map[string]HistoryIte
 
 	args := make([]interface{}, len(urls))
 	for i, url := range urls {
-		args[i] = url
+		args[i] = url.URL
 	}
 
 	f.logger.V(3).Info("Debug: Executing SQL query")

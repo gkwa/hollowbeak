@@ -18,14 +18,29 @@ func NewCollyTitleFetcher(logger logr.Logger) *CollyTitleFetcher {
 	}
 }
 
-func (f *CollyTitleFetcher) FetchTitle(url string) (string, error) {
-	f.logger.V(1).Info("Debug: Fetching title with Colly", "url", url)
+func (f *CollyTitleFetcher) FetchTitles(urls []urlRecord) (map[string]string, error) {
+	f.logger.V(1).Info("Debug: Fetching titles with Colly", "urlCount", len(urls))
 
+	titles := make(map[string]string)
+	for _, url := range urls {
+		title, err := f.fetchTitle(url.URL)
+		if err != nil {
+			f.logger.Error(err, "Failed to fetch title with Colly", "url", url.URL)
+			titles[url.URL] = ""
+		} else {
+			titles[url.URL] = title
+		}
+	}
+
+	return titles, nil
+}
+
+func (f *CollyTitleFetcher) fetchTitle(url string) (string, error) {
+	f.logger.V(2).Info("Debug: Creating Colly collector", "url", url)
 	c := colly.NewCollector(
 		colly.AllowURLRevisit(),
 		colly.MaxDepth(5),
 	)
-	f.logger.V(2).Info("Debug: Created Colly collector", "maxDepth", 5)
 
 	c.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 	f.logger.V(2).Info("Debug: Set User-Agent for Colly collector", "userAgent", c.UserAgent)
@@ -66,6 +81,6 @@ func (f *CollyTitleFetcher) FetchTitle(url string) (string, error) {
 		return "", fmt.Errorf("no title found for URL: %s", url)
 	}
 
-	f.logger.V(1).Info("Debug: Successfully fetched title", "originalURL", url, "finalURL", finalURL, "title", title)
+	f.logger.V(1).Info("Debug: Successfully fetched title with Colly", "originalURL", url, "finalURL", finalURL, "title", title)
 	return title, nil
 }

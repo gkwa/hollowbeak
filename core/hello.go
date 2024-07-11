@@ -83,20 +83,16 @@ func BuildURLInfoList(logger logr.Logger, extractor *URLExtractor) ([]URLInfo, e
 	}
 	logger.V(2).Info("Debug: URLs extracted", "count", len(urls))
 
+	titles, err := extractor.GetOrFetchTitles(urls)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get or fetch titles: %w", err)
+	}
+
 	var urlInfoList []URLInfo
-
 	for _, url := range urls {
-		logger.V(1).Info("Debug: Processing URL", "url", url)
-
-		title, err := extractor.GetOrFetchTitle(url)
-		if err != nil {
-			logger.Error(err, "Failed to get or fetch title", "url", url)
-			continue
-		}
-
-		logger.V(2).Info("Title", "url", url, "title", title)
-
-		urlInfoList = append(urlInfoList, URLInfo{URL: url, Title: title})
+		title := titles[url.URL]
+		logger.V(2).Info("Title", "url", url.URL, "title", title)
+		urlInfoList = append(urlInfoList, URLInfo{URL: url.URL, Title: title})
 	}
 
 	return urlInfoList, nil

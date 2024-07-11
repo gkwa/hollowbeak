@@ -35,7 +35,7 @@ func NewURLExtractor(logger logr.Logger, filePath string, titleFetchers []TitleF
 	}, nil
 }
 
-func (ue *URLExtractor) ExtractURLs() ([]string, error) {
+func (ue *URLExtractor) ExtractURLs() ([]urlRecord, error) {
 	ue.logger.V(1).Info("Debug: Extracting URLs from file", "path", ue.filePath)
 	content, err := os.ReadFile(ue.filePath)
 	if err != nil {
@@ -44,35 +44,55 @@ func (ue *URLExtractor) ExtractURLs() ([]string, error) {
 	}
 
 	rx := xurls.Strict()
-	urls := rx.FindAllString(string(content), -1)
+	rawURLs := rx.FindAllString(string(content), -1)
+
+	urls := make([]urlRecord, len(rawURLs))
+	for i, rawURL := range rawURLs {
+		urls[i] = newURLRecord(rawURL)
+	}
 
 	ue.logger.V(1).Info("Debug: URLs extracted", "count", len(urls))
 	return urls, nil
 }
 
-func (ue *URLExtractor) GetOrFetchTitle(url string) (string, error) {
+func (ue *URLExtractor) GetOrFetchTitles(urls []urlRecord) (map[string]string, error) {
+	titles := make(map[string]string)
+	urlsToFetch := make([]urlRecord, 0)
+
 	if !ue.noCache {
-		if title, ok := ue.cache.Get(url); ok {
-			ue.logger.V(1).Info("Debug: Title found in cache", "url", url, "title", title)
-			return title, nil
-		}
-	}
-
-	ue.logger.V(1).Info("Debug: Fetching title from web", "url", url)
-	var lastErr error
-	for _, fetcher := range ue.titleFetchers {
-		title, err := fetcher.FetchTitle(url)
-		if err == nil {
-			if !ue.noCache {
-				if err := ue.cache.Set(url, title); err != nil {
-					ue.logger.Error(err, "Failed to cache title", "url", url)
-				}
+		for _, url := range urls {
+			if title, ok := ue.cache.Get(url.URL); ok {
+				ue.logger.V(1).Info("Debug: Title found in cache", "url", url.URL, "title", title)
+				titles[url.URL] = title
+			} else {
+				urlsToFetch = append(urlsToFetch, url)
 			}
-			return title, nil
 		}
-		lastErr = err
-		ue.logger.V(2).Info("Debug: Fetcher failed, trying next", "url", url, "error", err.Error())
+	} else {
+		urlsToFetch = urls
 	}
 
-	return "", fmt.Errorf("all fetchers failed to fetch title: %w", lastErr)
+	if len(urlsToFetch) > 0 {
+		ue.logger.V(1).Info("Debug: Fetching titles from web", "urlCount", len(urlsToFetch))
+		var lastErr error
+		for _, fetcher := range ue.titleFetchers {
+			fetchedTitles, err := fetcher.FetchTitles(urlsToFetch)
+			if err == nil {
+				for url, title := range fetchedTitles {
+					titles[url] = title
+					if !ue.noCache {
+						if err := ue.cache.Set(url, title); err != nil {
+							ue.logger.Error(err, "Failed to cache title", "url", url)
+						}
+					}
+				}
+				return titles, nil
+			}
+			lastErr = err
+			ue.logger.V(2).Info("Debug: Fetcher failed, trying next", "error", err.Error())
+		}
+		return titles, fmt.Errorf("all fetchers failed to fetch titles: %w", lastErr)
+	}
+
+	return titles, nil
 }

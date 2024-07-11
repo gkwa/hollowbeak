@@ -8,7 +8,7 @@ import (
 )
 
 type TitleFetcher interface {
-	FetchTitle(url string) (string, error)
+	FetchTitles(urls []urlRecord) (map[string]string, error)
 }
 
 type HTTPTitleFetcher struct {
@@ -24,9 +24,24 @@ func NewHTTPTitleFetcher(logger logr.Logger) *HTTPTitleFetcher {
 	}
 }
 
-func (f *HTTPTitleFetcher) FetchTitle(url string) (string, error) {
-	f.logger.V(1).Info("Debug: Fetching title", "url", url)
+func (f *HTTPTitleFetcher) FetchTitles(urls []urlRecord) (map[string]string, error) {
+	f.logger.V(1).Info("Debug: Fetching titles", "urlCount", len(urls))
 
+	titles := make(map[string]string)
+	for _, url := range urls {
+		title, err := f.fetchTitle(url.URL)
+		if err != nil {
+			f.logger.Error(err, "Failed to fetch title", "url", url.URL)
+			titles[url.URL] = ""
+		} else {
+			titles[url.URL] = title
+		}
+	}
+
+	return titles, nil
+}
+
+func (f *HTTPTitleFetcher) fetchTitle(url string) (string, error) {
 	f.logger.V(2).Info("Debug: Creating HTTP request", "url", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
