@@ -76,6 +76,14 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []urlRecord) (map[string]History
 	}
 	defer db.Close()
 
+	// Debug SQLite queries if verbose mode is enabled
+	if f.logger.V(4).Enabled() {
+		err = DebugSQLiteQueries(f.logger, backupFile)
+		if err != nil {
+			f.logger.Error(err, "Failed to debug SQLite queries")
+		}
+	}
+
 	placeholders := make([]string, len(urls))
 	for i := range placeholders {
 		placeholders[i] = "?"
