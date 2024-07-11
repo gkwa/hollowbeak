@@ -94,7 +94,7 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []urlRecord) (map[string]History
   	visit_time DESC
  `, strings.Join(placeholders, ","))
 
-	f.logger.V(3).Info("Debug: Prepared SQL query", "query", query)
+	f.logger.V(1).Info("Debug: Prepared SQL query", "query", query)
 
 	args := make([]interface{}, len(urls))
 	for i, url := range urls {
