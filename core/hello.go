@@ -12,10 +12,20 @@ type URLInfo struct {
 	Title string
 }
 
-func Hello(logger logr.Logger, filePath string, outputFormat string) error {
+func Hello(logger logr.Logger, filePath string, outputFormat string, fetcherType string) error {
 	logger.V(1).Info("Debug: Entering Hello function")
 
-	titleFetcher := NewCollyTitleFetcher(logger)
+	var titleFetcher TitleFetcher
+	switch fetcherType {
+	case "http":
+		titleFetcher = NewHTTPTitleFetcher(logger)
+	case "colly":
+		titleFetcher = NewCollyTitleFetcher(logger)
+	case "sql":
+		titleFetcher = NewSQLTitleFetcher(logger)
+	default:
+		return fmt.Errorf("invalid fetcher type: %s", fetcherType)
+	}
 
 	logger.V(1).Info("Debug: Creating new URLExtractor", "filePath", filePath)
 	extractor, err := NewURLExtractor(logger, filePath, titleFetcher)
