@@ -9,9 +9,12 @@ import (
 
 func TestIntegration(t *testing.T) {
 	logger := testr.New(t)
-	url := "https://blog.baeke.info/2024/07/11/token-consumption-in-microsofts-graph-rag/"
 
-	tempFile, err := createTempFileWithURL(url)
+	markdown := `
+[Token consumption in Microsoft’s Graph RAG – baeke.info](https://blog.baeke.info/2024/07/11/token-consumption-in-microsofts-graph-rag/)
+`
+
+	tempFile, err := createTempFileWithURL(markdown)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}

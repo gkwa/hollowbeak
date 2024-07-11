@@ -43,7 +43,7 @@ func (ue *URLExtractor) ExtractURLs() ([]string, error) {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	rx := xurls.Relaxed()
+	rx := xurls.Strict()
 	urls := rx.FindAllString(string(content), -1)
 
 	ue.logger.V(1).Info("Debug: URLs extracted", "count", len(urls))
