@@ -46,7 +46,7 @@ func TestCustomLogger(t *testing.T) {
 
 func TestJSONLogger(t *testing.T) {
 	oldVerbose, oldLogFormat := verbose, logFormat
-	verbose, logFormat = true, "json"
+	verbose, logFormat = 1, "json"
 	defer func() {
 		verbose, logFormat = oldVerbose, oldLogFormat
 	}()
