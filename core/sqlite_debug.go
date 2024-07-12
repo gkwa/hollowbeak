@@ -8,26 +8,12 @@ import (
 	"github.com/go-logr/logr"
 )
 
-func DebugSQLiteQueries(logger logr.Logger, dbPath string) error {
-	db, err := sql.Open("sqlite3", dbPath)
-	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
-	}
-	defer db.Close()
+func DebugSQLiteQueries(logger logr.Logger, db *sql.DB) error {
+	logger.Info("Debug: Retrieving SQLite query history")
 
-	var tableName string
-	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='sqlite_stat4'").Scan(&tableName)
+	rows, err := db.Query("SELECT * FROM query_log ORDER BY time DESC LIMIT 10")
 	if err != nil {
-		if err == sql.ErrNoRows {
-			logger.Info("sqlite_stat4 table does not exist. Query history might not be available.")
-			return nil
-		}
-		return fmt.Errorf("failed to check for sqlite_stat4 table: %w", err)
-	}
-
-	rows, err := db.Query("SELECT * FROM sqlite_stat4")
-	if err != nil {
-		return fmt.Errorf("failed to query sqlite_stat4 table: %w", err)
+		return fmt.Errorf("failed to query query_log: %w", err)
 	}
 	defer rows.Close()
 

@@ -69,19 +69,28 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []urlRecord) (map[string]History
 	defer os.Remove(backupFile)
 
 	f.logger.V(3).Info("Debug: Opening SQLite database", "path", backupFile)
-	db, err := sql.Open("sqlite3", backupFile+"?mode=ro")
+	db, err := sql.Open("sqlite3", backupFile+"?mode=rw")
 	if err != nil {
 		f.logger.Error(err, "Failed to open SQLite database")
 		return nil, "", err
 	}
 	defer db.Close()
 
-	// Debug SQLite queries if verbose mode is enabled
-	if f.logger.V(4).Enabled() {
-		err = DebugSQLiteQueries(f.logger, backupFile)
-		if err != nil {
-			f.logger.Error(err, "Failed to debug SQLite queries")
-		}
+	_, err = db.Exec("PRAGMA query_log = on;")
+	if err != nil {
+		f.logger.Error(err, "Failed to enable query logging")
+		return nil, "", err
+	}
+
+	_, err = db.Exec(`
+   	CREATE TABLE IF NOT EXISTS query_log (
+   		time DATETIME DEFAULT CURRENT_TIMESTAMP,
+   		query TEXT
+   	)
+   `)
+	if err != nil {
+		f.logger.Error(err, "Failed to create query_log table")
+		return nil, "", err
 	}
 
 	placeholders := make([]string, len(urls))
@@ -90,17 +99,17 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []urlRecord) (map[string]History
 	}
 
 	query := fmt.Sprintf(`
-  SELECT
-  	datetime(visits.visit_time/1000000-11644473600, 'unixepoch', 'localtime') as visit_time,
-  	urls.url,
-  	urls.title
-  FROM
-  	visits INNER JOIN urls ON visits.url = urls.id
-  WHERE
-  	urls.url IN (%s)
-  ORDER BY
-  	visit_time DESC
- `, strings.Join(placeholders, ","))
+ SELECT
+ 	datetime(visits.visit_time/1000000-11644473600, 'unixepoch', 'localtime') as visit_time,
+ 	urls.url,
+ 	urls.title
+ FROM
+ 	visits INNER JOIN urls ON visits.url = urls.id
+ WHERE
+ 	urls.url IN (%s)
+ ORDER BY
+ 	visit_time DESC
+`, strings.Join(placeholders, ","))
 
 	f.logger.V(1).Info("Debug: Prepared SQL query", "query", query)
 
@@ -143,6 +152,14 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []urlRecord) (map[string]History
 	}
 
 	f.logger.V(2).Info("Debug: Finished getting titles for URLs", "itemCount", len(historyItems))
+
+	if f.logger.V(3).Enabled() {
+		err = DebugSQLiteQueries(f.logger, db)
+		if err != nil {
+			f.logger.Error(err, "Failed to debug SQLite queries")
+		}
+	}
+
 	return historyItems, query, nil
 }
 
