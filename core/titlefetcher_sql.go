@@ -76,11 +76,21 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []urlRecord) (map[string]History
 	}
 	defer db.Close()
 
-	if f.logger.V(3).Enabled() {
-		err = DebugSQLiteQueries(f.logger, db)
-		if err != nil {
-			f.logger.Error(err, "Failed to debug SQLite queries")
-		}
+	_, err = db.Exec("PRAGMA query_log = on;")
+	if err != nil {
+		f.logger.Error(err, "Failed to enable query logging")
+		return nil, "", err
+	}
+
+	_, err = db.Exec(`
+   	CREATE TABLE IF NOT EXISTS query_log (
+   		time DATETIME DEFAULT CURRENT_TIMESTAMP,
+   		query TEXT
+   	)
+   `)
+	if err != nil {
+		f.logger.Error(err, "Failed to create query_log table")
+		return nil, "", err
 	}
 
 	placeholders := make([]string, len(urls))
@@ -89,16 +99,16 @@ func (f *SQLTitleFetcher) getTitlesForURLs(urls []urlRecord) (map[string]History
 	}
 
 	query := fmt.Sprintf(`
-SELECT
-	datetime(visits.visit_time/1000000-11644473600, 'unixepoch', 'localtime') as visit_time,
-	urls.url,
-	urls.title
-FROM
-	visits INNER JOIN urls ON visits.url = urls.id
-WHERE
-	urls.url IN (%s)
-ORDER BY
-	visit_time DESC
+ SELECT
+ 	datetime(visits.visit_time/1000000-11644473600, 'unixepoch', 'localtime') as visit_time,
+ 	urls.url,
+ 	urls.title
+ FROM
+ 	visits INNER JOIN urls ON visits.url = urls.id
+ WHERE
+ 	urls.url IN (%s)
+ ORDER BY
+ 	visit_time DESC
 `, strings.Join(placeholders, ","))
 
 	f.logger.V(1).Info("Debug: Prepared SQL query", "query", query)
@@ -142,6 +152,13 @@ ORDER BY
 	}
 
 	f.logger.V(2).Info("Debug: Finished getting titles for URLs", "itemCount", len(historyItems))
+
+	if f.logger.V(3).Enabled() {
+		err = DebugSQLiteQueries(f.logger, db)
+		if err != nil {
+			f.logger.Error(err, "Failed to debug SQLite queries")
+		}
+	}
 
 	return historyItems, query, nil
 }

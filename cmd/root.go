@@ -14,7 +14,7 @@ import (
 
 var (
 	cfgFile   string
-	verbose   int
+	verbose   bool
 	logFormat string
 	cliLogger logr.Logger
 )
@@ -24,6 +24,9 @@ var rootCmd = &cobra.Command{
 	Short: "A brief description of your application",
 	Long:  `A longer description that spans multiple lines and likely contains examples and usage of using your application.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Initialize the console logger just before running
+		// a command only if one wasn't provided. This allows other
+		// callers (e.g. unit tests) to inject their own logger ahead of time.
 		if cliLogger.IsZero() {
 			cliLogger = logger.NewConsoleLogger(verbose, logFormat == "json")
 		}
@@ -44,7 +47,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hollowbeak.yaml)")
-	rootCmd.PersistentFlags().CountVarP(&verbose, "verbose", "v", "increase verbosity")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose mode")
 	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "", "json or text (default is text)")
 
 	if err := viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose")); err != nil {
@@ -76,7 +79,7 @@ func initConfig() {
 	}
 
 	logFormat = viper.GetString("log-format")
-	verbose = viper.GetInt("verbose")
+	verbose = viper.GetBool("verbose")
 }
 
 func LoggerFrom(ctx context.Context, keysAndValues ...interface{}) logr.Logger {
