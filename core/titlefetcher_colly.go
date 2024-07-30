@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/gocolly/colly/v2"
@@ -48,10 +49,15 @@ func (f *CollyTitleFetcher) fetchTitle(url string) (string, error) {
 	var title string
 	var finalURL string
 
-	c.OnHTML("title", func(e *colly.HTMLElement) {
-		title = e.Text
-		finalURL = e.Request.URL.String()
-		f.logger.V(2).Info("Debug: Found title", "title", title, "url", finalURL)
+	c.OnHTML("html", func(e *colly.HTMLElement) {
+		titleElement := e.DOM.Find("title")
+		if titleElement.Length() == 0 {
+			f.logger.V(2).Info("Debug: No title element found in HTML")
+		} else {
+			title = strings.TrimSpace(titleElement.Text())
+			finalURL = e.Request.URL.String()
+			f.logger.V(2).Info("Debug: Found title", "title", title, "url", finalURL)
+		}
 	})
 
 	c.OnRequest(func(r *colly.Request) {
