@@ -59,7 +59,9 @@ func (ue *URLExtractor) GetOrFetchTitles(urls []urlRecord) (map[string]string, e
 	titles := make(map[string]string)
 	urlsToFetch := make([]urlRecord, 0)
 
-	if !ue.noCache {
+	if ue.noCache {
+		urlsToFetch = urls
+	} else {
 		for _, url := range urls {
 			if title, ok := ue.cache.Get(url.URL); ok {
 				ue.logger.V(1).Info("Debug: Title found in cache", "url", url.URL, "title", title)
@@ -68,8 +70,6 @@ func (ue *URLExtractor) GetOrFetchTitles(urls []urlRecord) (map[string]string, e
 				urlsToFetch = append(urlsToFetch, url)
 			}
 		}
-	} else {
-		urlsToFetch = urls
 	}
 
 	if len(urlsToFetch) > 0 {
