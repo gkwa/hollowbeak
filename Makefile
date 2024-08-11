@@ -46,7 +46,6 @@ goreleaser: goreleaser --clean
 
 .PHONY: tidy # go mod tidy
 tidy: .timestamps/.tidy.time
-
 .timestamps/.tidy.time: go.mod go.sum
 	go mod tidy
 	@mkdir -p .timestamps
@@ -54,7 +53,6 @@ tidy: .timestamps/.tidy.time
 
 .PHONY: fmt # go fmt
 fmt: .timestamps/.fmt.time
-
 .timestamps/.fmt.time: $(SRC)
 	gofumpt -w $(SRC)
 	@mkdir -p .timestamps
@@ -62,9 +60,8 @@ fmt: .timestamps/.fmt.time
 
 .PHONY: lint # lint
 lint: .timestamps/.lint.time
-
 .timestamps/.lint.time: $(SRC)
-	golangci-lint run
+	golangci-lint run --verbose --out-format colored-line-number
 	@mkdir -p .timestamps
 	@touch $@
 
