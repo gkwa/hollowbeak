@@ -2,7 +2,7 @@ package core
 
 import (
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/go-logr/logr"
 	"mvdan.cc/xurls/v2"
@@ -10,13 +10,18 @@ import (
 
 type URLExtractor struct {
 	logger        logr.Logger
-	filePath      string
+	reader        io.Reader
 	cache         *Cache
 	titleFetchers []TitleFetcher
 	noCache       bool
 }
 
-func NewURLExtractor(logger logr.Logger, filePath string, titleFetchers []TitleFetcher, noCache bool) (*URLExtractor, error) {
+func NewURLExtractor(
+	logger logr.Logger,
+	reader io.Reader,
+	titleFetchers []TitleFetcher,
+	noCache bool,
+) (*URLExtractor, error) {
 	var cache *Cache
 	var err error
 	if !noCache {
@@ -28,7 +33,7 @@ func NewURLExtractor(logger logr.Logger, filePath string, titleFetchers []TitleF
 
 	return &URLExtractor{
 		logger:        logger,
-		filePath:      filePath,
+		reader:        reader,
 		cache:         cache,
 		titleFetchers: titleFetchers,
 		noCache:       noCache,
@@ -36,11 +41,11 @@ func NewURLExtractor(logger logr.Logger, filePath string, titleFetchers []TitleF
 }
 
 func (ue *URLExtractor) ExtractURLs() ([]urlRecord, error) {
-	ue.logger.V(1).Info("Debug: Extracting URLs from file", "path", ue.filePath)
-	content, err := os.ReadFile(ue.filePath)
+	ue.logger.V(1).Info("Debug: Extracting URLs from reader")
+	content, err := io.ReadAll(ue.reader)
 	if err != nil {
-		ue.logger.Error(err, "Failed to read file", "path", ue.filePath)
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		ue.logger.Error(err, "Failed to read from reader")
+		return nil, fmt.Errorf("failed to read from reader: %w", err)
 	}
 
 	rx := xurls.Strict()

@@ -23,7 +23,21 @@ var helloCmd = &cobra.Command{
 		logger := LoggerFrom(cmd.Context())
 		logger.V(1).Info("Debug: Entering hello command Run function")
 		logger.Info("Running hello command")
-		if err := core.Hello(logger, inputFile, outputFormat, fetcherTypes, noCache); err != nil {
+
+		file, err := os.Open(inputFile)
+		if err != nil {
+			logger.Error(err, "Failed to open input file")
+			os.Exit(1)
+		}
+		defer file.Close()
+
+		if err := core.Hello(
+			logger,
+			file,
+			outputFormat,
+			fetcherTypes,
+			noCache,
+		); err != nil {
 			logger.Error(err, "Failed to execute Hello function")
 			os.Exit(1)
 		}

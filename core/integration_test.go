@@ -23,7 +23,7 @@ func TestIntegration(t *testing.T) {
 	fetchers := []string{"sql", "colly", "http"}
 	noCache := true
 
-	err = Hello(logger, tempFile.Name(), "markdown", fetchers, noCache)
+	err = Hello(logger, tempFile, "markdown", fetchers, noCache)
 	if err != nil {
 		t.Fatalf("Hello function failed: %v", err)
 	}
@@ -38,12 +38,6 @@ func createTempFileWithURL(url string) (*os.File, error) {
 	_, err = tempFile.WriteString(url)
 	if err != nil {
 		tempFile.Close()
-		os.Remove(tempFile.Name())
-		return nil, err
-	}
-
-	err = tempFile.Close()
-	if err != nil {
 		os.Remove(tempFile.Name())
 		return nil, err
 	}

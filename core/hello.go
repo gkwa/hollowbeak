@@ -16,7 +16,7 @@ type URLInfo struct {
 
 func Hello(
 	logger logr.Logger,
-	filePath string,
+	reader io.Reader,
 	outputFormat string,
 	fetcherTypes []string,
 	noCache bool,
@@ -41,8 +41,8 @@ func Hello(
 		return fmt.Errorf("no valid fetcher types specified")
 	}
 
-	logger.V(1).Info("Debug: Creating new URLExtractor", "filePath", filePath)
-	extractor, err := NewURLExtractor(logger, filePath, titleFetchers, noCache)
+	logger.V(1).Info("Debug: Creating new URLExtractor")
+	extractor, err := NewURLExtractor(logger, reader, titleFetchers, noCache)
 	if err != nil {
 		return fmt.Errorf("failed to create URLExtractor: %w", err)
 	}
