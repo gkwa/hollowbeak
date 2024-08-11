@@ -68,6 +68,8 @@ func FetchURLTitles(
 		output = GenerateMarkdown(urlInfoList)
 	case "html":
 		output = GenerateHTML(urlInfoList)
+	case "space":
+		output = GenerateSpaceDelimited(urlInfoList)
 	default:
 		return fmt.Errorf("invalid output format: %s", outputFormat)
 	}
@@ -108,6 +110,14 @@ func GenerateMarkdown(urlInfoList []URLInfo) string {
 	var sb strings.Builder
 	for _, info := range urlInfoList {
 		sb.WriteString(fmt.Sprintf("[%s](%s)\n\n", info.Title, info.URL))
+	}
+	return sb.String()
+}
+
+func GenerateSpaceDelimited(urlInfoList []URLInfo) string {
+	var sb strings.Builder
+	for _, info := range urlInfoList {
+		sb.WriteString(fmt.Sprintf("%s %s\n", info.URL, info.Title))
 	}
 	return sb.String()
 }

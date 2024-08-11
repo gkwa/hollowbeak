@@ -26,7 +26,6 @@ iterate: check $(BIN)
 
 .PHONY: check # lint and vet
 check: .timestamps/.check.time
-
 .timestamps/.check.time: tidy fmt lint vet
 	@mkdir -p .timestamps
 	@touch $@
@@ -61,13 +60,12 @@ fmt: .timestamps/.fmt.time
 .PHONY: lint # lint
 lint: .timestamps/.lint.time
 .timestamps/.lint.time: $(SRC)
-	golangci-lint run --verbose --out-format colored-line-number
+	golangci-lint run
 	@mkdir -p .timestamps
 	@touch $@
 
 .PHONY: vet # go vet
 vet: .timestamps/.vet.time
-
 .timestamps/.vet.time: $(SRC)
 	go vet ./...
 	@mkdir -p .timestamps

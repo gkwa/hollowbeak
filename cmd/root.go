@@ -46,6 +46,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "markdown", "Output format: 'markdown', 'html' or 'space'")
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hollowbeak.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose mode")
 	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "", "json or text (default is text)")

@@ -15,7 +15,7 @@ var (
 
 var fileUrlTitlesCmd = &cobra.Command{
 	Use:     "file-url-titles",
-	Short:   "A",
+	Short:   "Accept path to file and return urls and url titles in various formats (default markdown)",
 	Aliases: []string{"efu"},
 	Args:    cobra.ExactArgs(1),
 	Long:    `A longer description that spans multiple lines and likely contains examples and usage of using your command.`,
@@ -47,7 +47,6 @@ var fileUrlTitlesCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(fileUrlTitlesCmd)
-	fileUrlTitlesCmd.Flags().StringVar(&outputFormat, "output", "markdown", "Output format: 'markdown' or 'html'")
 	fileUrlTitlesCmd.Flags().StringSliceVar(&fetcherTypes, "fetcher", []string{"sql", "colly", "http"}, "Title fetcher types: 'http', 'colly', or 'sql'. Can be specified multiple times.")
 	fileUrlTitlesCmd.Flags().BoolVar(&noCache, "no-cache", false, "Skip cache for this run")
 }
