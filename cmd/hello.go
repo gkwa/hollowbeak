@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/gkwa/hollowbeak/core"
@@ -10,28 +9,29 @@ import (
 
 var (
 	outputFormat string
-	inputFile    string
 	fetcherTypes []string
 	noCache      bool
 )
 
-var helloCmd = &cobra.Command{
-	Use:   "hello",
-	Short: "A brief description of your command",
-	Long:  `A longer description that spans multiple lines and likely contains examples and usage of using your command.`,
+var fileUrlTitlesCmd = &cobra.Command{
+	Use:     "file-url-titles",
+	Short:   "A",
+	Aliases: []string{"efu"},
+	Args:    cobra.ExactArgs(1),
+	Long:    `A longer description that spans multiple lines and likely contains examples and usage of using your command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := LoggerFrom(cmd.Context())
 		logger.V(1).Info("Debug: Entering hello command Run function")
 		logger.Info("Running hello command")
 
-		file, err := os.Open(inputFile)
+		file, err := os.Open(args[0])
 		if err != nil {
 			logger.Error(err, "Failed to open input file")
 			os.Exit(1)
 		}
 		defer file.Close()
 
-		if err := core.Hello(
+		if err := core.FetchURLTitles(
 			logger,
 			file,
 			outputFormat,
@@ -46,13 +46,8 @@ var helloCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(helloCmd)
-	helloCmd.Flags().StringVar(&outputFormat, "output", "markdown", "Output format: 'markdown' or 'html'")
-	helloCmd.Flags().StringVar(&inputFile, "input", "", "Input file path")
-	helloCmd.Flags().StringSliceVar(&fetcherTypes, "fetcher", []string{"sql", "colly", "http"}, "Title fetcher types: 'http', 'colly', or 'sql'. Can be specified multiple times.")
-	helloCmd.Flags().BoolVar(&noCache, "no-cache", false, "Skip cache for this run")
-	if err := helloCmd.MarkFlagRequired("input"); err != nil {
-		fmt.Fprintf(os.Stderr, "Error marking 'input' flag as required: %v\n", err)
-		os.Exit(1)
-	}
+	rootCmd.AddCommand(fileUrlTitlesCmd)
+	fileUrlTitlesCmd.Flags().StringVar(&outputFormat, "output", "markdown", "Output format: 'markdown' or 'html'")
+	fileUrlTitlesCmd.Flags().StringSliceVar(&fetcherTypes, "fetcher", []string{"sql", "colly", "http"}, "Title fetcher types: 'http', 'colly', or 'sql'. Can be specified multiple times.")
+	fileUrlTitlesCmd.Flags().BoolVar(&noCache, "no-cache", false, "Skip cache for this run")
 }

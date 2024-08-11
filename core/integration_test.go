@@ -23,7 +23,7 @@ func TestIntegration(t *testing.T) {
 	fetchers := []string{"sql", "colly", "http"}
 	noCache := true
 
-	err = Hello(logger, tempFile, "markdown", fetchers, noCache)
+	err = FetchURLTitles(logger, tempFile, "markdown", fetchers, noCache)
 	if err != nil {
 		t.Fatalf("Hello function failed: %v", err)
 	}

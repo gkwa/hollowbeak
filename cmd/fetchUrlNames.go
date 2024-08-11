@@ -30,7 +30,7 @@ to quickly create a Cobra application.`,
 		content := strings.Join(args, "\n")
 		buffer.WriteString(content)
 
-		if err := core.Hello(
+		if err := core.FetchURLTitles(
 			logger,
 			buffer,
 			outputFormat,

@@ -14,7 +14,7 @@ type URLInfo struct {
 	Title string
 }
 
-func Hello(
+func FetchURLTitles(
 	logger logr.Logger,
 	reader io.Reader,
 	outputFormat string,
