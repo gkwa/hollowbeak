@@ -59,6 +59,11 @@ func (cache *Cache) Get(key string) (string, bool) {
 		return "", false
 	}
 
+	if item.Value == "" {
+		cache.logger.V(2).Info("Debug: Cache item has empty value", "key", key)
+		return "", false
+	}
+
 	return item.Value, true
 }
 
@@ -95,8 +100,8 @@ func (cache *Cache) CleanupAndSave() error {
 	cache.logger.V(1).Info("Debug: Starting cache cleanup")
 	now := time.Now()
 	for key, item := range cache.data {
-		if now.After(item.ExpiresAt) {
-			cache.logger.V(2).Info("Debug: Removing expired cache item", "key", key)
+		if now.After(item.ExpiresAt) || item.Value == "" {
+			cache.logger.V(2).Info("Debug: Removing expired or empty cache item", "key", key)
 			delete(cache.data, key)
 		}
 	}
