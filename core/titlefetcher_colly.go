@@ -2,7 +2,9 @@ package core
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gocolly/colly/v2"
@@ -42,6 +44,16 @@ func (f *CollyTitleFetcher) fetchTitle(url string) (string, error) {
 		colly.AllowURLRevisit(),
 		colly.MaxDepth(5),
 	)
+
+	// Increase timeouts
+	c.SetRequestTimeout(30 * time.Second)
+
+	// Configure transport
+	c.WithTransport(&http.Transport{
+		TLSHandshakeTimeout:   15 * time.Second,
+		ResponseHeaderTimeout: 15 * time.Second,
+		ExpectContinueTimeout: 5 * time.Second,
+	})
 
 	c.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 	f.logger.V(2).Info("Debug: Set User-Agent for Colly collector", "userAgent", c.UserAgent)
