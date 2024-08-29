@@ -11,6 +11,10 @@ import (
 	"github.com/go-logr/logr"
 )
 
+const (
+	cacheFileName = "hollowbeak/data.json"
+)
+
 type CacheItem struct {
 	Value     string    `json:"value"`
 	ExpiresAt time.Time `json:"expiresAt"`
@@ -23,7 +27,7 @@ type Cache struct {
 }
 
 func NewCache(logger logr.Logger) (*Cache, error) {
-	cacheFile, err := getCachePath("hollowbeak/data.json")
+	cacheFile, err := GetCachePath()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cache path: %w", err)
 	}
@@ -117,17 +121,10 @@ func (cache *Cache) save() error {
 	return nil
 }
 
-func getCachePath(configRelPath string) (string, error) {
-	configFilePath, err := xdg.ConfigFile(configRelPath)
+func GetCachePath() (string, error) {
+	configFilePath, err := xdg.ConfigFile(cacheFileName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get XDG config file path: %w", err)
 	}
-
-	dirPerm := os.FileMode(0o700)
-	dir := filepath.Dir(configFilePath)
-	if err := os.MkdirAll(dir, dirPerm); err != nil {
-		return "", fmt.Errorf("failed to create cache directory: %w", err)
-	}
-
-	return configFilePath, nil
+	return filepath.Abs(configFilePath)
 }
