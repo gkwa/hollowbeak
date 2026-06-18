@@ -21,7 +21,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.31.0
-	mvdan.cc/xurls/v2 v2.6.0
+	mvdan.cc/xurls/v2 v2.5.0
 	sigs.k8s.io/controller-runtime v0.19.1
 )
 
@@ -69,7 +69,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
