@@ -2,7 +2,7 @@ module github.com/gkwa/hollowbeak
 
 go 1.22.0
 
-toolchain go1.23.3
+toolchain go1.27.1
 
 require (
 	github.com/adrg/xdg v0.5.3
@@ -14,7 +14,7 @@ require (
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/google/go-containerregistry v0.20.2
 	github.com/magefile/mage v1.15.0
-	github.com/mattn/go-sqlite3 v1.14.50
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
