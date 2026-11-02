@@ -13,8 +13,8 @@ require (
 	github.com/go-logr/zerologr v1.2.3
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/google/go-containerregistry v0.20.2
-	github.com/magefile/mage v1.15.0
-	github.com/mattn/go-sqlite3 v1.14.52
+	github.com/magefile/mage v1.17.2
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
